@@ -27,6 +27,45 @@ function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * Acquire a browser session with retry logic for rate limits.
+ * Tries to reuse an existing session first, otherwise launches a new one.
+ */
+async function acquireBrowser(binding: Fetcher): Promise<any> {
+  // Check for existing sessions first
+  try {
+    const sessions = await puppeteer.sessions(binding);
+    if (sessions.length > 0) {
+      const freeSession = sessions.find((s: any) => !s.connectionId);
+      if (freeSession) {
+        console.log(`  Reusing existing session: ${freeSession.sessionId}`);
+        return await puppeteer.connect(binding, freeSession.sessionId);
+      }
+    }
+  } catch (e: any) {
+    console.log('  Session check failed, launching new:', e.message);
+  }
+
+  // Launch with retry for rate limits
+  let lastError: any;
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    try {
+      console.log(`[1] Launching browser (attempt ${attempt})...`);
+      return await puppeteer.launch(binding, { keep_alive: 300000 });
+    } catch (err: any) {
+      lastError = err;
+      if (err.message?.includes('429') || err.message?.includes('Rate limit')) {
+        const wait = Math.min(1000 * Math.pow(2, attempt), 30000);
+        console.log(`  Rate limited, waiting ${wait}ms...`);
+        await sleep(wait);
+      } else {
+        throw err;
+      }
+    }
+  }
+  throw lastError;
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -56,8 +95,8 @@ export default {
  * solve the WAF challenge, call the API, and store results in KV
  */
 async function fetchAndStoreData(env: Env) {
-  console.log('[1] Launching browser...');
-  const browser = await puppeteer.launch(env.MYBROWSER);
+  // Try to reuse an existing browser session, or create a new one
+  const browser = await acquireBrowser(env.MYBROWSER);
   const page = await browser.newPage();
 
   // Set a realistic user agent
