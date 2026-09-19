@@ -127,12 +127,19 @@ async function cdpEvaluate(ws: WebSocket, expression: string): Promise<any> {
 async function fetchAndStoreData(env: Env) {
   console.log('Fetching browser session...');
 
-  // Step 1: Get a browser session from the binding
-  const browserRes = await env.MYBROWSER.fetch(new Request('https://browser/'));
-  const webSocketUrl = browserRes.headers.get('X-Chrome-WebSocket-URL');
+  // Step 1: Get a browser session via CDP endpoint through the binding
+  const browserRes = await env.MYBROWSER.fetch('https://browser/devtools/browser', { method: 'POST' });
+
+  if (!browserRes.ok) {
+    const body = await browserRes.text().catch(() => 'Could not read body');
+    throw new Error(`Failed to create browser session. Status: ${browserRes.status}, Body: ${body}`);
+  }
+
+  const sessionData = await browserRes.json() as { sessionId: string; webSocketDebuggerUrl?: string };
+  const webSocketUrl = sessionData.webSocketDebuggerUrl;
 
   if (!webSocketUrl) {
-    throw new Error('Failed to get browser WebSocket URL');
+    throw new Error(`Failed to get browser WebSocket URL. Response: ${JSON.stringify(sessionData)}`);
   }
 
   console.log('Connecting to browser via WebSocket...');
