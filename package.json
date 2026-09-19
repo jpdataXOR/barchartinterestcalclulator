@@ -16,7 +16,6 @@
 		"publish": true
 	},
 	"devDependencies": {
-		"@cloudflare/puppeteer": "^1.1.0",
 		"typescript": "5.9.3",
 		"wrangler": "4.56.0"
 	},
