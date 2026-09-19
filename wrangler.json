@@ -16,7 +16,7 @@
 	"kv_namespaces": [
 		{
 			"binding": "FUTURES_DATA",
-			"id": "your-kv-namespace-id"
+			"id": "c983a3ff3c8540a59c09b20dec8a0b34"
 		}
 	],
 	"observability": {
