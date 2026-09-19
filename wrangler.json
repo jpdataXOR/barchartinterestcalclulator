@@ -10,11 +10,9 @@
 			"database_name": "d1-barchart"
 		}
 	],
-	"browser": [
-		{
-			"binding": "MYBROWSER"
-		}
-	],
+	"browser": {
+		"binding": "MYBROWSER"
+	},
 	"kv_namespaces": [
 		{
 			"binding": "FUTURES_DATA",
