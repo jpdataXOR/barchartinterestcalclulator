@@ -52,27 +52,51 @@ export default {
 
 /**
  * Connect to browser via WebSocket upgrade through the binding
+ * Retries with exponential backoff on rate limits.
  */
 async function connectToBrowser(binding: Fetcher): Promise<WebSocket> {
-  const response = await binding.fetch('https://browser/v1/devtools/browser', {
-    headers: { 'Upgrade': 'websocket' }
-  });
+  let lastError: any;
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    try {
+      const response = await binding.fetch('https://browser/v1/devtools/browser', {
+        headers: { 'Upgrade': 'websocket' }
+      });
 
-  const ws = response.webSocket;
-  if (!ws) {
-    const body = await response.text().catch(() => '');
-    throw new Error(`Failed to acquire browser: ${response.status} ${body}`);
+      if (response.status === 429) {
+        const body = await response.text().catch(() => '');
+        const wait = Math.min(1000 * Math.pow(2, attempt), 30000);
+        console.log(`Rate limited (attempt ${attempt}), waiting ${wait}ms...`);
+        await sleep(wait);
+        continue;
+      }
+
+      const ws = response.webSocket;
+      if (!ws) {
+        const body = await response.text().catch(() => '');
+        throw new Error(`Failed to acquire browser: ${response.status} ${body}`);
+      }
+
+      ws.accept();
+
+      await new Promise<void>((resolve, reject) => {
+        ws.addEventListener('open', () => resolve());
+        ws.addEventListener('error', () => reject(new Error('WebSocket error')));
+        setTimeout(() => reject(new Error('WebSocket timeout')), 15000);
+      });
+
+      return ws;
+    } catch (err: any) {
+      lastError = err;
+      if (err.message?.includes('429') || err.message?.includes('Rate limit')) {
+        const wait = Math.min(1000 * Math.pow(2, attempt), 30000);
+        console.log(`Rate limited (attempt ${attempt}), waiting ${wait}ms...`);
+        await sleep(wait);
+      } else {
+        throw err;
+      }
+    }
   }
-
-  ws.accept();
-
-  await new Promise<void>((resolve, reject) => {
-    ws.addEventListener('open', () => resolve());
-    ws.addEventListener('error', () => reject(new Error('WebSocket error')));
-    setTimeout(() => reject(new Error('WebSocket timeout')), 15000);
-  });
-
-  return ws;
+  throw lastError || new Error('Failed to connect to browser after 5 attempts');
 }
 
 /**
