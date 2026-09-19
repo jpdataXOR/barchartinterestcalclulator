@@ -1,6 +1,6 @@
 /**
  * Cloudflare Worker — Barchart Futures Data Fetcher
- * Uses raw CDP (Chrome DevTools Protocol) via WebSocket
+ * Uses @cloudflare/puppeteer for browser automation
  *
  * Endpoints:
  *   GET /api/refresh  — Fetch fresh data from Barchart
@@ -8,7 +8,13 @@
  *   GET /             — HTML dashboard
  */
 
+import puppeteer from "@cloudflare/puppeteer";
 import { renderHtml } from "./renderHtml";
+
+interface Env {
+  MYBROWSER: Fetcher;
+  FUTURES_DATA: KVNamespace;
+}
 
 // Target instruments
 const TARGET_INSTRUMENTS = [
@@ -51,155 +57,43 @@ export default {
 };
 
 /**
- * Connect to browser via WebSocket upgrade through the binding
- * Retries with exponential backoff on rate limits.
- */
-async function connectToBrowser(binding: Fetcher): Promise<WebSocket> {
-  let lastError: any;
-  for (let attempt = 1; attempt <= 5; attempt++) {
-    try {
-      const response = await binding.fetch('https://browser/v1/devtools/browser', {
-        headers: { 'Upgrade': 'websocket' }
-      });
-
-      if (response.status === 429) {
-        const body = await response.text().catch(() => '');
-        const wait = Math.min(1000 * Math.pow(2, attempt), 30000);
-        console.log(`Rate limited (attempt ${attempt}), waiting ${wait}ms...`);
-        await sleep(wait);
-        continue;
-      }
-
-      const ws = response.webSocket;
-      if (!ws) {
-        const body = await response.text().catch(() => '');
-        throw new Error(`Failed to acquire browser: ${response.status} ${body}`);
-      }
-
-      ws.accept();
-
-      await new Promise<void>((resolve, reject) => {
-        ws.addEventListener('open', () => resolve());
-        ws.addEventListener('error', () => reject(new Error('WebSocket error')));
-        setTimeout(() => reject(new Error('WebSocket timeout')), 15000);
-      });
-
-      return ws;
-    } catch (err: any) {
-      lastError = err;
-      if (err.message?.includes('429') || err.message?.includes('Rate limit')) {
-        const wait = Math.min(1000 * Math.pow(2, attempt), 30000);
-        console.log(`Rate limited (attempt ${attempt}), waiting ${wait}ms...`);
-        await sleep(wait);
-      } else {
-        throw err;
-      }
-    }
-  }
-  throw lastError || new Error('Failed to connect to browser after 5 attempts');
-}
-
-/**
- * Send a CDP command and wait for response
- */
-function cdpSend(ws: WebSocket, msgId: number, method: string, params: Record<string, unknown> = {}): Promise<any> {
-  return new Promise((resolve, reject) => {
-    const msg = JSON.stringify({ id: msgId, method, params });
-    const handler = (event: MessageEvent) => {
-      try {
-        const resp = JSON.parse(event.data as string);
-        if (resp.id === msgId) {
-          ws.removeEventListener('message', handler);
-          if (resp.error) reject(new Error(resp.error.message));
-          else resolve(resp.result);
-        }
-      } catch (e) {}
-    };
-    ws.addEventListener('message', handler);
-    ws.send(msg);
-    setTimeout(() => {
-      ws.removeEventListener('message', handler);
-      reject(new Error(`CDP ${method} timed out`));
-    }, 30000);
-  });
-}
-
-/**
- * Wait for a CDP event
- */
-function cdpWaitForEvent(ws: WebSocket, eventName: string, timeout = 30000): Promise<any> {
-  return new Promise((resolve, reject) => {
-    const handler = (event: MessageEvent) => {
-      try {
-        const resp = JSON.parse(event.data as string);
-        if (resp.method === eventName) {
-          ws.removeEventListener('message', handler);
-          resolve(resp.params);
-        }
-      } catch (e) {}
-    };
-    ws.addEventListener('message', handler);
-    setTimeout(() => {
-      ws.removeEventListener('message', handler);
-      reject(new Error(`Event ${eventName} timed out`));
-    }, timeout);
-  });
-}
-
-/**
- * Evaluate JS in the browser page
- */
-async function cdpEvaluate(ws: WebSocket, expression: string): Promise<any> {
-  const msgId = Date.now();
-  const result = await cdpSend(ws, msgId, 'Runtime.evaluate', {
-    expression: `(${expression})()`,
-    returnByValue: true,
-    awaitPromise: true,
-    timeout: 30000
-  });
-  if (result.exceptionDetails) {
-    throw new Error(result.exceptionDetails.text || 'Eval error');
-  }
-  return result.result.value;
-}
-
-/**
  * Main function: visit barchart.com, get WAF token, fetch data
  */
 async function fetchAndStoreData(env: Env) {
   console.log('Connecting to browser...');
-  const ws = await connectToBrowser(env.MYBROWSER);
+  const browser = await puppeteer.launch(env.MYBROWSER);
 
   try {
     // Create a page
     console.log('Creating page...');
-    const target = await cdpSend(ws, 1, 'Target.createTarget', {
-      url: 'about:blank',
-      width: 1920,
-      height: 1080
-    });
-    const pageId = target.targetId as string;
+    const page = await browser.newPage();
+    
+    // Set viewport
+    await page.setViewport({ width: 1920, height: 1080 });
+
+    // Set realistic user agent
+    await page.setUserAgent(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36'
+    );
 
     // Navigate to barchart
     console.log('Navigating to barchart.com...');
-    await cdpSend(ws, 2, 'Page.enable', {});
-    await cdpSend(ws, 3, 'Page.navigate', {
-      url: 'https://www.barchart.com/futures/major-commodities'
-    });
-
-    // Wait for load
     try {
-      await cdpWaitForEvent(ws, 'Page.frameStoppedLoading', 30000);
-    } catch (e: any) {
-      console.log('Navigation timeout:', e.message);
+      await page.goto('https://www.barchart.com/futures/major-commodities', {
+        waitUntil: 'networkidle0',
+        timeout: 60000
+      });
+      console.log('  Page loaded successfully');
+    } catch (err: any) {
+      console.log('  Navigation timeout but may still have cookies:', err.message);
     }
 
+    // Wait for any async cookie setting
     await sleep(3000);
 
     // Get cookies
     console.log('Getting cookies...');
-    const cookieResult = await cdpSend(ws, 4, 'Network.getAllCookies', {});
-    const cookies: { name: string; value: string }[] = cookieResult.cookies || [];
+    const cookies = await page.cookies();
     console.log(`Found ${cookies.length} cookies`);
 
     let awsWafToken = '';
@@ -211,6 +105,18 @@ async function fetchAndStoreData(env: Env) {
     }
 
     if (!awsWafToken) {
+      console.log('No aws-waf-token found, waiting longer...');
+      await sleep(5000);
+      const cookies2 = await page.cookies();
+      for (const c of cookies2) {
+        if (c.name === 'aws-waf-token') {
+          awsWafToken = c.value;
+          console.log('Found aws-waf-token on retry!');
+        }
+      }
+    }
+
+    if (!awsWafToken) {
       throw new Error('No aws-waf-token obtained from barchart.com');
     }
 
@@ -218,13 +124,16 @@ async function fetchAndStoreData(env: Env) {
     console.log('Fetching futures data...');
     const mainUrl = 'https://www.barchart.com/proxies/core-api/v1/quotes/get?lists=futures.category.us.all&fields=symbol%2CcontractName%2ClastPrice%2CpriceChange%2CopenPrice%2ChighPrice%2ClowPrice%2Cvolume%2CtradeTime%2Ccategory%2ChasOptions%2CsymbolCode%2CsymbolType&limit=100&page=1&groupBy=category&raw=1';
 
-    const mainData = await cdpEvaluate(ws, `async () => {
-      const resp = await fetch('${mainUrl}', {
-        headers: { 'accept': 'application/json', 'referer': 'https://www.barchart.com/futures/major-commodities' }
+    const mainData = await page.evaluate(async (url: string) => {
+      const resp = await fetch(url, {
+        headers: { 
+          'accept': 'application/json', 
+          'referer': 'https://www.barchart.com/futures/major-commodities' 
+        }
       });
       if (!resp.ok) throw new Error('API returned ' + resp.status);
       return resp.json();
-    }`);
+    }, mainUrl);
 
     console.log('API call successful!');
 
@@ -266,13 +175,13 @@ async function fetchAndStoreData(env: Env) {
       const referer = `https://www.barchart.com/futures/quotes/${rootSymbol}*0/futures-prices`;
 
       try {
-        const detailData = await cdpEvaluate(ws, `async () => {
-          const resp = await fetch('${detailUrl}', {
-            headers: { 'accept': 'application/json', 'referer': '${referer}' }
+        const detailData = await page.evaluate(async ({ url, referer }: { url: string; referer: string }) => {
+          const resp = await fetch(url, {
+            headers: { 'accept': 'application/json', 'referer': referer }
           });
           if (!resp.ok) return null;
           return resp.json();
-        }`);
+        }, { url: detailUrl, referer });
 
         if (detailData && detailData.data) {
           for (const contract of detailData.data) {
@@ -292,16 +201,18 @@ async function fetchAndStoreData(env: Env) {
               tradeTime: raw.tradeTime
             });
           }
+          console.log(`  ${rootSymbol}: ${detailData.data.length} contracts`);
+        } else {
+          console.log(`  ${rootSymbol}: no data`);
         }
       } catch (err: any) {
         console.log(`Error ${rootSymbol}: ${err.message}`);
       }
     }
 
-    // Close
+    // Close browser
     console.log('Closing browser...');
-    try { await cdpSend(ws, 99, 'Target.closeTarget', { targetId: pageId }); } catch (e) {}
-    ws.close();
+    await browser.close();
 
     // Store in KV
     const payload = {
@@ -324,7 +235,7 @@ async function fetchAndStoreData(env: Env) {
 
   } catch (error: any) {
     console.error('Error:', error.message);
-    try { ws.close(); } catch (e) {}
+    try { await browser.close(); } catch (e) {}
     throw error;
   }
 }

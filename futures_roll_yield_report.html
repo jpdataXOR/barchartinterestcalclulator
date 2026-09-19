@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Futures Roll Yield Analysis - 2026-09-19T15:20:43.575Z</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#0d1117; color:#c9d1d9; padding:20px; }
+.container { max-width:1400px; margin:0 auto; }
+.header { background:linear-gradient(135deg,#1f6feb,#238636); padding:30px; border-radius:12px 12px 0 0; text-align:center; }
+.header h1 { font-size:2em; color:#fff; }
+.header .ts { color:#ccc; font-size:0.9em; margin-top:8px; }
+.stats { display:flex; gap:16px; padding:20px; background:#161b22; border-bottom:1px solid #30363d; flex-wrap:wrap; }
+.stat-box { text-align:center; padding:12px 24px; background:#0d1117; border-radius:8px; border:1px solid #30363d; flex:1; min-width:120px; }
+.stat-box .num { font-size:1.8em; font-weight:bold; color:#58a6ff; }
+.stat-box .label { color:#8b949e; font-size:0.85em; margin-top:4px; }
+.tabs { display:flex; background:#161b22; border-bottom:2px solid #30363d; overflow-x:auto; }
+.tab { padding:14px 24px; cursor:pointer; border:none; background:transparent; font-size:0.95em; color:#8b949e; transition:all 0.2s; border-bottom:3px solid transparent; white-space:nowrap; }
+.tab:hover { background:#0d1117; color:#c9d1d9; }
+.tab.active { color:#58a6ff; border-bottom-color:#58a6ff; }
+.tab-content { display:none; padding:24px; background:#0d1117; }
+.tab-content.active { display:block; }
+table { width:100%; border-collapse:collapse; margin-top:16px; }
+thead { background:#161b22; }
+th { padding:10px 12px; text-align:left; font-weight:600; color:#8b949e; font-size:0.8em; border-bottom:2px solid #30363d; }
+td { padding:8px 12px; border-bottom:1px solid #21262d; font-size:0.85em; }
+tbody tr:hover { background:#161b22; }
+.positive { color:#3fb950; font-weight:bold; }
+.negative { color:#f85149; font-weight:bold; }
+.badge { display:inline-block; padding:2px 10px; border-radius:10px; font-size:0.75em; font-weight:600; }
+.badge-long { background:#0d5320; color:#3fb950; border:1px solid #3fb950; }
+.badge-short { background:#5c1010; color:#f85149; border:1px solid #f85149; }
+.badge-contango { background:#5c1010; color:#f85149; border:1px solid #f85149; }
+.badge-backwardation { background:#0d5320; color:#3fb950; border:1px solid #3fb950; }
+.summary-box { background:#161b22; padding:20px; border-radius:8px; margin-top:20px; border:1px solid #30363d; }
+.summary-box h3 { color:#58a6ff; margin-bottom:12px; }
+.summary-item { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #21262d; }
+.summary-item:last-child { border-bottom:none; }
+.dataTables_wrapper .dataTables_filter input { background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:4px; padding:6px; }
+.dataTables_wrapper .dataTables_length select { background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:4px; }
+.dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_paginate { color:#8b949e !important; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+  <h1>Futures Roll Yield Analysis</h1>
+  <div class="ts">Generated: 2026-09-19T15:20:43.575Z</div>
+</div>
+<div class="stats">
+  <div class="stat-box"><div class="num">42</div><div class="label">Instruments Analyzed</div></div>
+  <div class="stat-box"><div class="num">11</div><div class="label">LONG Opportunities</div></div>
+  <div class="stat-box"><div class="num">30</div><div class="label">SHORT Opportunities</div></div>
+  <div class="stat-box"><div class="num">1097</div><div class="label">Contract Months</div></div>
+</div>
+<div class="tabs">
+  <button class="tab active" data-tab="long">LONG Opportunities (Backwardation)</button>
+  <button class="tab" data-tab="short">SHORT Opportunities (Contango)</button>
+  <button class="tab" data-tab="all">All Instruments</button>
+</div>
+
+<div id="long" class="tab-content active">
+  <h2 style="color:#3fb950;margin-bottom:8px;">LONG Opportunities — Backwardation</h2>
+  <p style="color:#8b949e;font-size:0.85em;margin-bottom:12px;">
+    Front month < next month → futures curve slopes DOWN → roll yield is POSITIVE for longs.
+    Higher annualized % = stronger backwardation.
+  </p>
+  <table id="longTable" class="display">
+    <thead><tr>
+      <th>Symbol</th><th>Name</th><th>Category</th><th>Front</th><th>Next</th>
+      <th>Front $</th><th>Next $</th><th>Diff</th><th>Ann. Yield</th><th>Daily $/ctr</th><th>Signal</th>
+    </tr></thead>
+    <tbody><tr>
+      <td><strong>HE</strong></td>
+      <td>Lean Hogs</td>
+      <td>Meats</td>
+      <td>HEV26</td>
+      <td>HEZ26</td>
+      <td>78.1</td>
+      <td>68.55</td>
+      <td class="positive">-9.5500</td>
+      <td class="positive">-74.39%</td>
+      <td>$63.67</td>
+      <td><span class="badge badge-long">LONG</span></td>
+    </tr>
+<tr>
+      <td><strong>QA</strong></td>
+      <td>Crude Oil Brent</td>
+      <td>Energies</td>
+      <td>QAX26</td>
+      <td>QAZ26</td>
+      <td>103.87</td>
+      <td>99.29</td>
+      <td class="positive">-4.5800</td>
+      <td class="positive">-53.65%</td>
+      <td>$152.67</td>
+      <td><span class="badge badge-long">LONG</span></td>
+    </tr>
+<tr>
+      <td><strong>CL</strong></td>
+      <td>Crude Oil WTI</td>
+      <td>Energies</td>
+      <td>CLV26</td>
+      <td>CLX26</td>
+      <td>100.3</td>
+      <td>96.08</td>
+      <td class="positive">-4.2200</td>
+      <td class="positive">-51.19%</td>
+      <td>$140.67</td>
+      <td><span class="badge badge-long">LONG</span></td>
+    </tr>
+<tr>
+      <td><strong>KC</strong></td>
+      <td>Coffee</td>
+      <td>Softs</td>
+      <td>KCZ26</td>
+      <td>KCH27</td>
+      <td>280.5</td>
+      <td>271.95</td>
+      <td class="positive">-8.5500</td>
+      <td class="positive">-12.36%</td>
+      <td>$35.63</td>
+      <td><span class="badge badge-long">LONG</span></td>
+    </tr>
+<tr>
+      <td><strong>L6</strong></td>
+      <td>Brazilian Real</td>
+      <td>Currencies</td>
+      <td>L6V26</td>
+      <td>L6X26</td>
+      <td>0.19375</td>
+      <td>0.19265</td>
+      <td class="positive">-0.0011</td>
+      <td class="positive">-6.91%</td>
+      <td>$3.67</td>
+      <td><span class="badge badge-long">LONG</span></td>
+    </tr>
+<tr>
+      <td><strong>M6</strong></td>
+      <td>Mexican Peso</td>
+      <td>Currencies</td>
+      <td>M6V26</td>
+      <td>M6X26</td>
+      <td>0.05791</td>
+      <td>0.05778</td>
+      <td class="positive">-0.0001</td>
+      <td class="positive">-2.73%</td>
+      <td>$2.17</td>
+      <td><span class="badge badge-long">LONG</span></td>
+    </tr>
+<tr>
+      <td><strong>T6</strong></td>
+      <td>South African Rand</td>
+      <td>Currencies</td>
+      <td>T6V26</td>
+      <td>T6X26</td>
+      <td>0.061425</td>
+      <td>0.0613</td>
+      <td class="positive">-0.0001</td>
+      <td class="positive">-2.48%</td>
+      <td>$2.08</td>
+      <td><span class="badge badge-long">LONG</span></td>
+    </tr>
+<tr>
+      <td><strong>ZN</strong></td>
+      <td>10-Year T-Note</td>
+      <td>Financials</td>
+      <td>ZNU26</td>
+      <td>ZNZ26</td>
+      <td>106.078125</td>
+      <td>105.828125</td>
+      <td class="positive">-0.2500</td>
+      <td class="positive">-0.96%</td>
+      <td>$2.78</td>
+      <td><span class="badge badge-long">LONG</span></td>
+    </tr>
+<tr>
+      <td><strong>ZT</strong></td>
+      <td>2-Year T-Note</td>
+      <td>Financials</td>
+      <td>ZTU26</td>
+      <td>ZTZ26</td>
+      <td>102.09375</td>
+      <td>101.878125</td>
+      <td class="positive">-0.2156</td>
+      <td class="positive">-0.86%</td>
+      <td>$4.79</td>
+      <td><span class="badge badge-long">LONG</span></td>
+    </tr>
+<tr>
+      <td><strong>ZF</strong></td>
+      <td>5-Year T-Note</td>
+      <td>Financials</td>
+      <td>ZFU26</td>
+      <td>ZFZ26</td>
+      <td>104.375</td>
+      <td>104.178125</td>
+      <td class="positive">-0.1969</td>
+      <td class="positive">-0.76%</td>
+      <td>$2.19</td>
+      <td><span class="badge badge-long">LONG</span></td>
+    </tr>
+<tr>
+      <td><strong>A6</strong></td>
+      <td>Australian Dollar</td>
+      <td>Currencies</td>
+      <td>A6V26</td>
+      <td>A6X26</td>
+      <td>0.71225</td>
+      <td>0.71195</td>
+      <td class="positive">-0.0003</td>
+      <td class="positive">-0.51%</td>
+      <td>$1.00</td>
+      <td><span class="badge badge-long">LONG</span></td>
+    </tr></tbody>
+  </table>
+</div>
+
+<div id="short" class="tab-content">
+  <h2 style="color:#f85149;margin-bottom:8px;">SHORT Opportunities — Contango</h2>
+  <p style="color:#8b949e;font-size:0.85em;margin-bottom:12px;">
+    Front month < next month → futures curve slopes UP → roll yield is NEGATIVE for longs (positive for shorts).
+    Higher annualized % = stronger contango.
+  </p>
+  <table id="shortTable" class="display">
+    <thead><tr>
+      <th>Symbol</th><th>Name</th><th>Category</th><th>Front</th><th>Next</th>
+      <th>Front $</th><th>Next $</th><th>Diff</th><th>Ann. Yield</th><th>Daily $/ctr</th><th>Signal</th>
+    </tr></thead>
+    <tbody><tr>
+      <td><strong>NG</strong></td>
+      <td>Natural Gas</td>
+      <td>Energies</td>
+      <td>NGV26</td>
+      <td>NGX26</td>
+      <td>2.912</td>
+      <td>3.043</td>
+      <td class="negative">+0.1310</td>
+      <td class="negative">+54.73%</td>
+      <td>$43.67</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>VI</strong></td>
+      <td>S&amp;P 500 VIX</td>
+      <td>Indices</td>
+      <td>VIV26</td>
+      <td>VIX26</td>
+      <td>18.0411</td>
+      <td>18.7049</td>
+      <td class="negative">+0.6638</td>
+      <td class="negative">+44.77%</td>
+      <td>$22.13</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>CT</strong></td>
+      <td>Cotton #2</td>
+      <td>Softs</td>
+      <td>CTV26</td>
+      <td>CTZ26</td>
+      <td>77.38</td>
+      <td>81.15</td>
+      <td class="negative">+3.7700</td>
+      <td class="negative">+29.64%</td>
+      <td>$31.42</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>LB</strong></td>
+      <td>Lumber Physical</td>
+      <td>Softs</td>
+      <td>LBX26</td>
+      <td>LBF27</td>
+      <td>537</td>
+      <td>553.5</td>
+      <td class="negative">+16.5000</td>
+      <td class="negative">+18.69%</td>
+      <td>$27.50</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>ZR</strong></td>
+      <td>Rough Rice</td>
+      <td>Grains</td>
+      <td>ZRX26</td>
+      <td>ZRF27</td>
+      <td>15.64</td>
+      <td>16.1</td>
+      <td class="negative">+0.4600</td>
+      <td class="negative">+17.89%</td>
+      <td>$1.53</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>OJ</strong></td>
+      <td>Orange Juice</td>
+      <td>Softs</td>
+      <td>OJX26</td>
+      <td>OJF27</td>
+      <td>140.9</td>
+      <td>144.35</td>
+      <td class="negative">+3.4500</td>
+      <td class="negative">+14.90%</td>
+      <td>$8.62</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>SB</strong></td>
+      <td>Sugar #11</td>
+      <td>Softs</td>
+      <td>SBV26</td>
+      <td>SBH27</td>
+      <td>17.36</td>
+      <td>18.24</td>
+      <td class="negative">+0.8800</td>
+      <td class="negative">+12.33%</td>
+      <td>$6.57</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>ZO</strong></td>
+      <td>Oats</td>
+      <td>Grains</td>
+      <td>ZOZ26</td>
+      <td>ZOH27</td>
+      <td>406.5</td>
+      <td>418.75</td>
+      <td class="negative">+12.2500</td>
+      <td class="negative">+12.22%</td>
+      <td>$6.81</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>ZC</strong></td>
+      <td>Corn</td>
+      <td>Grains</td>
+      <td>ZCZ26</td>
+      <td>ZCH27</td>
+      <td>527.5</td>
+      <td>541.5</td>
+      <td class="negative">+14.0000</td>
+      <td class="negative">+10.76%</td>
+      <td>$7.78</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>CC</strong></td>
+      <td>Cocoa</td>
+      <td>Softs</td>
+      <td>CCZ26</td>
+      <td>CCH27</td>
+      <td>5327</td>
+      <td>5446</td>
+      <td class="negative">+119.0000</td>
+      <td class="negative">+9.06%</td>
+      <td>$13.22</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>ZW</strong></td>
+      <td>Wheat</td>
+      <td>Grains</td>
+      <td>ZWZ26</td>
+      <td>ZWH27</td>
+      <td>714.25</td>
+      <td>730</td>
+      <td class="negative">+15.7500</td>
+      <td class="negative">+8.94%</td>
+      <td>$8.75</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>ZS</strong></td>
+      <td>Soybean</td>
+      <td>Grains</td>
+      <td>ZSX26</td>
+      <td>ZSF27</td>
+      <td>1303.5</td>
+      <td>1320</td>
+      <td class="negative">+16.5000</td>
+      <td class="negative">+7.70%</td>
+      <td>$13.75</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>BT</strong></td>
+      <td>Bitcoin Futures</td>
+      <td>Currencies</td>
+      <td>BTU26</td>
+      <td>BTV26</td>
+      <td>81815</td>
+      <td>82150</td>
+      <td class="negative">+335.0000</td>
+      <td class="negative">+4.98%</td>
+      <td>$55.83</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>NQ</strong></td>
+      <td>Nasdaq 100 E-Mini</td>
+      <td>Indices</td>
+      <td>NQZ26</td>
+      <td>NQH27</td>
+      <td>29917.25</td>
+      <td>30272.25</td>
+      <td class="negative">+355.0000</td>
+      <td class="negative">+4.81%</td>
+      <td>$78.89</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>NM</strong></td>
+      <td>Nasdaq 100 Micro</td>
+      <td>Indices</td>
+      <td>NMZ26</td>
+      <td>NMH27</td>
+      <td>29917.25</td>
+      <td>30272.25</td>
+      <td class="negative">+355.0000</td>
+      <td class="negative">+4.81%</td>
+      <td>$19.72</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>ZL</strong></td>
+      <td>Soybean Oil</td>
+      <td>Grains</td>
+      <td>ZLV26</td>
+      <td>ZLZ26</td>
+      <td>67.7</td>
+      <td>68.22</td>
+      <td class="negative">+0.5200</td>
+      <td class="negative">+4.67%</td>
+      <td>$5.20</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>S6</strong></td>
+      <td>Swiss Franc</td>
+      <td>Currencies</td>
+      <td>S6Z26</td>
+      <td>S6H27</td>
+      <td>1.22845</td>
+      <td>1.2423</td>
+      <td class="negative">+0.0138</td>
+      <td class="negative">+4.57%</td>
+      <td>$19.24</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>ES</strong></td>
+      <td>S&amp;P 500 E-Mini</td>
+      <td>Indices</td>
+      <td>ESZ26</td>
+      <td>ESH27</td>
+      <td>7712.5</td>
+      <td>7792.75</td>
+      <td class="negative">+80.2500</td>
+      <td class="negative">+4.22%</td>
+      <td>$44.58</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>ET</strong></td>
+      <td>S&amp;P 500 Micro</td>
+      <td>Indices</td>
+      <td>ETZ26</td>
+      <td>ETH27</td>
+      <td>7712.5</td>
+      <td>7792.75</td>
+      <td class="negative">+80.2500</td>
+      <td class="negative">+4.22%</td>
+      <td>$4.46</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>LE</strong></td>
+      <td>Live Cattle</td>
+      <td>Meats</td>
+      <td>LEV26</td>
+      <td>LEZ26</td>
+      <td>215.925</td>
+      <td>216.625</td>
+      <td class="negative">+0.7000</td>
+      <td class="negative">+1.97%</td>
+      <td>$4.67</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>PL</strong></td>
+      <td>Platinum</td>
+      <td>Metals</td>
+      <td>PLU26</td>
+      <td>PLV26</td>
+      <td>1803.5</td>
+      <td>1806.4</td>
+      <td class="negative">+2.9000</td>
+      <td class="negative">+1.96%</td>
+      <td>$4.83</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>HG</strong></td>
+      <td>High Grade Copper</td>
+      <td>Metals</td>
+      <td>HGU26</td>
+      <td>HGV26</td>
+      <td>6.615</td>
+      <td>6.625</td>
+      <td class="negative">+0.0100</td>
+      <td class="negative">+1.84%</td>
+      <td>$8.33</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>D6</strong></td>
+      <td>Canadian Dollar</td>
+      <td>Currencies</td>
+      <td>D6V26</td>
+      <td>D6X26</td>
+      <td>0.71565</td>
+      <td>0.71665</td>
+      <td class="negative">+0.0010</td>
+      <td class="negative">+1.70%</td>
+      <td>$3.33</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>PA</strong></td>
+      <td>Palladium</td>
+      <td>Metals</td>
+      <td>PAU26</td>
+      <td>PAV26</td>
+      <td>1306.2</td>
+      <td>1307.9</td>
+      <td class="negative">+1.7000</td>
+      <td class="negative">+1.58%</td>
+      <td>$5.67</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>E6</strong></td>
+      <td>Euro FX</td>
+      <td>Currencies</td>
+      <td>E6V26</td>
+      <td>E6X26</td>
+      <td>1.14965</td>
+      <td>1.15095</td>
+      <td class="negative">+0.0013</td>
+      <td class="negative">+1.38%</td>
+      <td>$5.42</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>GC</strong></td>
+      <td>Gold</td>
+      <td>Metals</td>
+      <td>GCU26</td>
+      <td>GCV26</td>
+      <td>4385.9</td>
+      <td>4390.7</td>
+      <td class="negative">+4.8000</td>
+      <td class="negative">+1.33%</td>
+      <td>$16.00</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>SI</strong></td>
+      <td>Silver</td>
+      <td>Metals</td>
+      <td>SIU26</td>
+      <td>SIV26</td>
+      <td>66.556</td>
+      <td>66.617</td>
+      <td class="negative">+0.0610</td>
+      <td class="negative">+1.12%</td>
+      <td>$10.17</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>N6</strong></td>
+      <td>New Zealand Dollar</td>
+      <td>Currencies</td>
+      <td>N6Z26</td>
+      <td>N6H27</td>
+      <td>0.57375</td>
+      <td>0.5753</td>
+      <td class="negative">+0.0016</td>
+      <td class="negative">+1.10%</td>
+      <td>$1.72</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>B6</strong></td>
+      <td>British Pound</td>
+      <td>Currencies</td>
+      <td>B6V26</td>
+      <td>B6X26</td>
+      <td>1.3392</td>
+      <td>1.3394</td>
+      <td class="negative">+0.0002</td>
+      <td class="negative">+0.18%</td>
+      <td>$0.42</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr>
+<tr>
+      <td><strong>AL</strong></td>
+      <td>Aluminum</td>
+      <td>Metals</td>
+      <td>ALU26</td>
+      <td>ALV26</td>
+      <td>3446.75</td>
+      <td>3447</td>
+      <td class="negative">+0.2500</td>
+      <td class="negative">+0.09%</td>
+      <td>$0.83</td>
+      <td><span class="badge badge-short">SHORT</span></td>
+    </tr></tbody>
+  </table>
+</div>
+
+<div id="all" class="tab-content">
+  <h2 style="color:#58a6ff;margin-bottom:8px;">All Instruments — Yield Analysis</h2>
+  <table id="allTable" class="display">
+    <thead><tr>
+      <th>Symbol</th><th>Name</th><th>Category</th><th>Front</th><th>Next</th>
+      <th>Front $</th><th>Next $</th><th>Diff</th><th>Ann. Yield</th><th>Curve</th><th>Signal</th>
+    </tr></thead>
+    <tbody><tr>
+        <td><strong>ZC</strong></td>
+        <td>Corn</td>
+        <td>Grains</td>
+        <td>ZCZ26</td>
+        <td>ZCH27</td>
+        <td>527.5</td>
+        <td>541.5</td>
+        <td class="negative">+14.0000</td>
+        <td class="negative">+10.76%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>ZS</strong></td>
+        <td>Soybean</td>
+        <td>Grains</td>
+        <td>ZSX26</td>
+        <td>ZSF27</td>
+        <td>1303.5</td>
+        <td>1320</td>
+        <td class="negative">+16.5000</td>
+        <td class="negative">+7.70%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>ZL</strong></td>
+        <td>Soybean Oil</td>
+        <td>Grains</td>
+        <td>ZLV26</td>
+        <td>ZLZ26</td>
+        <td>67.7</td>
+        <td>68.22</td>
+        <td class="negative">+0.5200</td>
+        <td class="negative">+4.67%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>ZW</strong></td>
+        <td>Wheat</td>
+        <td>Grains</td>
+        <td>ZWZ26</td>
+        <td>ZWH27</td>
+        <td>714.25</td>
+        <td>730</td>
+        <td class="negative">+15.7500</td>
+        <td class="negative">+8.94%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>ZO</strong></td>
+        <td>Oats</td>
+        <td>Grains</td>
+        <td>ZOZ26</td>
+        <td>ZOH27</td>
+        <td>406.5</td>
+        <td>418.75</td>
+        <td class="negative">+12.2500</td>
+        <td class="negative">+12.22%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>ZR</strong></td>
+        <td>Rough Rice</td>
+        <td>Grains</td>
+        <td>ZRX26</td>
+        <td>ZRF27</td>
+        <td>15.64</td>
+        <td>16.1</td>
+        <td class="negative">+0.4600</td>
+        <td class="negative">+17.89%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>CL</strong></td>
+        <td>Crude Oil WTI</td>
+        <td>Energies</td>
+        <td>CLV26</td>
+        <td>CLX26</td>
+        <td>100.3</td>
+        <td>96.08</td>
+        <td class="positive">-4.2200</td>
+        <td class="positive">-51.19%</td>
+        <td><span class="badge badge-backwardation">Backwardation</span></td>
+        <td><span class="badge badge-long">LONG</span></td>
+      </tr>
+<tr>
+        <td><strong>NG</strong></td>
+        <td>Natural Gas</td>
+        <td>Energies</td>
+        <td>NGV26</td>
+        <td>NGX26</td>
+        <td>2.912</td>
+        <td>3.043</td>
+        <td class="negative">+0.1310</td>
+        <td class="negative">+54.73%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>QA</strong></td>
+        <td>Crude Oil Brent</td>
+        <td>Energies</td>
+        <td>QAX26</td>
+        <td>QAZ26</td>
+        <td>103.87</td>
+        <td>99.29</td>
+        <td class="positive">-4.5800</td>
+        <td class="positive">-53.65%</td>
+        <td><span class="badge badge-backwardation">Backwardation</span></td>
+        <td><span class="badge badge-long">LONG</span></td>
+      </tr>
+<tr>
+        <td><strong>GC</strong></td>
+        <td>Gold</td>
+        <td>Metals</td>
+        <td>GCU26</td>
+        <td>GCV26</td>
+        <td>4385.9</td>
+        <td>4390.7</td>
+        <td class="negative">+4.8000</td>
+        <td class="negative">+1.33%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>SI</strong></td>
+        <td>Silver</td>
+        <td>Metals</td>
+        <td>SIU26</td>
+        <td>SIV26</td>
+        <td>66.556</td>
+        <td>66.617</td>
+        <td class="negative">+0.0610</td>
+        <td class="negative">+1.12%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>HG</strong></td>
+        <td>High Grade Copper</td>
+        <td>Metals</td>
+        <td>HGU26</td>
+        <td>HGV26</td>
+        <td>6.615</td>
+        <td>6.625</td>
+        <td class="negative">+0.0100</td>
+        <td class="negative">+1.84%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>PL</strong></td>
+        <td>Platinum</td>
+        <td>Metals</td>
+        <td>PLU26</td>
+        <td>PLV26</td>
+        <td>1803.5</td>
+        <td>1806.4</td>
+        <td class="negative">+2.9000</td>
+        <td class="negative">+1.96%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>PA</strong></td>
+        <td>Palladium</td>
+        <td>Metals</td>
+        <td>PAU26</td>
+        <td>PAV26</td>
+        <td>1306.2</td>
+        <td>1307.9</td>
+        <td class="negative">+1.7000</td>
+        <td class="negative">+1.58%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>AL</strong></td>
+        <td>Aluminum</td>
+        <td>Metals</td>
+        <td>ALU26</td>
+        <td>ALV26</td>
+        <td>3446.75</td>
+        <td>3447</td>
+        <td class="negative">+0.2500</td>
+        <td class="negative">+0.09%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>LE</strong></td>
+        <td>Live Cattle</td>
+        <td>Meats</td>
+        <td>LEV26</td>
+        <td>LEZ26</td>
+        <td>215.925</td>
+        <td>216.625</td>
+        <td class="negative">+0.7000</td>
+        <td class="negative">+1.97%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>HE</strong></td>
+        <td>Lean Hogs</td>
+        <td>Meats</td>
+        <td>HEV26</td>
+        <td>HEZ26</td>
+        <td>78.1</td>
+        <td>68.55</td>
+        <td class="positive">-9.5500</td>
+        <td class="positive">-74.39%</td>
+        <td><span class="badge badge-backwardation">Backwardation</span></td>
+        <td><span class="badge badge-long">LONG</span></td>
+      </tr>
+<tr>
+        <td><strong>CT</strong></td>
+        <td>Cotton #2</td>
+        <td>Softs</td>
+        <td>CTV26</td>
+        <td>CTZ26</td>
+        <td>77.38</td>
+        <td>81.15</td>
+        <td class="negative">+3.7700</td>
+        <td class="negative">+29.64%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>KC</strong></td>
+        <td>Coffee</td>
+        <td>Softs</td>
+        <td>KCZ26</td>
+        <td>KCH27</td>
+        <td>280.5</td>
+        <td>271.95</td>
+        <td class="positive">-8.5500</td>
+        <td class="positive">-12.36%</td>
+        <td><span class="badge badge-backwardation">Backwardation</span></td>
+        <td><span class="badge badge-long">LONG</span></td>
+      </tr>
+<tr>
+        <td><strong>SB</strong></td>
+        <td>Sugar #11</td>
+        <td>Softs</td>
+        <td>SBV26</td>
+        <td>SBH27</td>
+        <td>17.36</td>
+        <td>18.24</td>
+        <td class="negative">+0.8800</td>
+        <td class="negative">+12.33%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>CC</strong></td>
+        <td>Cocoa</td>
+        <td>Softs</td>
+        <td>CCZ26</td>
+        <td>CCH27</td>
+        <td>5327</td>
+        <td>5446</td>
+        <td class="negative">+119.0000</td>
+        <td class="negative">+9.06%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>LB</strong></td>
+        <td>Lumber Physical</td>
+        <td>Softs</td>
+        <td>LBX26</td>
+        <td>LBF27</td>
+        <td>537</td>
+        <td>553.5</td>
+        <td class="negative">+16.5000</td>
+        <td class="negative">+18.69%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>OJ</strong></td>
+        <td>Orange Juice</td>
+        <td>Softs</td>
+        <td>OJX26</td>
+        <td>OJF27</td>
+        <td>140.9</td>
+        <td>144.35</td>
+        <td class="negative">+3.4500</td>
+        <td class="negative">+14.90%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>ES</strong></td>
+        <td>S&amp;P 500 E-Mini</td>
+        <td>Indices</td>
+        <td>ESZ26</td>
+        <td>ESH27</td>
+        <td>7712.5</td>
+        <td>7792.75</td>
+        <td class="negative">+80.2500</td>
+        <td class="negative">+4.22%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>NQ</strong></td>
+        <td>Nasdaq 100 E-Mini</td>
+        <td>Indices</td>
+        <td>NQZ26</td>
+        <td>NQH27</td>
+        <td>29917.25</td>
+        <td>30272.25</td>
+        <td class="negative">+355.0000</td>
+        <td class="negative">+4.81%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>ET</strong></td>
+        <td>S&amp;P 500 Micro</td>
+        <td>Indices</td>
+        <td>ETZ26</td>
+        <td>ETH27</td>
+        <td>7712.5</td>
+        <td>7792.75</td>
+        <td class="negative">+80.2500</td>
+        <td class="negative">+4.22%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>NM</strong></td>
+        <td>Nasdaq 100 Micro</td>
+        <td>Indices</td>
+        <td>NMZ26</td>
+        <td>NMH27</td>
+        <td>29917.25</td>
+        <td>30272.25</td>
+        <td class="negative">+355.0000</td>
+        <td class="negative">+4.81%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>VI</strong></td>
+        <td>S&amp;P 500 VIX</td>
+        <td>Indices</td>
+        <td>VIV26</td>
+        <td>VIX26</td>
+        <td>18.0411</td>
+        <td>18.7049</td>
+        <td class="negative">+0.6638</td>
+        <td class="negative">+44.77%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>E6</strong></td>
+        <td>Euro FX</td>
+        <td>Currencies</td>
+        <td>E6V26</td>
+        <td>E6X26</td>
+        <td>1.14965</td>
+        <td>1.15095</td>
+        <td class="negative">+0.0013</td>
+        <td class="negative">+1.38%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>A6</strong></td>
+        <td>Australian Dollar</td>
+        <td>Currencies</td>
+        <td>A6V26</td>
+        <td>A6X26</td>
+        <td>0.71225</td>
+        <td>0.71195</td>
+        <td class="positive">-0.0003</td>
+        <td class="positive">-0.51%</td>
+        <td><span class="badge badge-backwardation">Backwardation</span></td>
+        <td><span class="badge badge-long">LONG</span></td>
+      </tr>
+<tr>
+        <td><strong>B6</strong></td>
+        <td>British Pound</td>
+        <td>Currencies</td>
+        <td>B6V26</td>
+        <td>B6X26</td>
+        <td>1.3392</td>
+        <td>1.3394</td>
+        <td class="negative">+0.0002</td>
+        <td class="negative">+0.18%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>D6</strong></td>
+        <td>Canadian Dollar</td>
+        <td>Currencies</td>
+        <td>D6V26</td>
+        <td>D6X26</td>
+        <td>0.71565</td>
+        <td>0.71665</td>
+        <td class="negative">+0.0010</td>
+        <td class="negative">+1.70%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>J6</strong></td>
+        <td>Japanese Yen</td>
+        <td>Currencies</td>
+        <td>J6V26</td>
+        <td>J6X26</td>
+        <td>0.006395</td>
+        <td>0.0064095</td>
+        <td class="">+0.0000</td>
+        <td class="">+2.76%</td>
+        <td><span class="badge ">Flat</span></td>
+        <td><span class="badge ">FLAT</span></td>
+      </tr>
+<tr>
+        <td><strong>S6</strong></td>
+        <td>Swiss Franc</td>
+        <td>Currencies</td>
+        <td>S6Z26</td>
+        <td>S6H27</td>
+        <td>1.22845</td>
+        <td>1.2423</td>
+        <td class="negative">+0.0138</td>
+        <td class="negative">+4.57%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>M6</strong></td>
+        <td>Mexican Peso</td>
+        <td>Currencies</td>
+        <td>M6V26</td>
+        <td>M6X26</td>
+        <td>0.05791</td>
+        <td>0.05778</td>
+        <td class="positive">-0.0001</td>
+        <td class="positive">-2.73%</td>
+        <td><span class="badge badge-backwardation">Backwardation</span></td>
+        <td><span class="badge badge-long">LONG</span></td>
+      </tr>
+<tr>
+        <td><strong>N6</strong></td>
+        <td>New Zealand Dollar</td>
+        <td>Currencies</td>
+        <td>N6Z26</td>
+        <td>N6H27</td>
+        <td>0.57375</td>
+        <td>0.5753</td>
+        <td class="negative">+0.0016</td>
+        <td class="negative">+1.10%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>L6</strong></td>
+        <td>Brazilian Real</td>
+        <td>Currencies</td>
+        <td>L6V26</td>
+        <td>L6X26</td>
+        <td>0.19375</td>
+        <td>0.19265</td>
+        <td class="positive">-0.0011</td>
+        <td class="positive">-6.91%</td>
+        <td><span class="badge badge-backwardation">Backwardation</span></td>
+        <td><span class="badge badge-long">LONG</span></td>
+      </tr>
+<tr>
+        <td><strong>T6</strong></td>
+        <td>South African Rand</td>
+        <td>Currencies</td>
+        <td>T6V26</td>
+        <td>T6X26</td>
+        <td>0.061425</td>
+        <td>0.0613</td>
+        <td class="positive">-0.0001</td>
+        <td class="positive">-2.48%</td>
+        <td><span class="badge badge-backwardation">Backwardation</span></td>
+        <td><span class="badge badge-long">LONG</span></td>
+      </tr>
+<tr>
+        <td><strong>BT</strong></td>
+        <td>Bitcoin Futures</td>
+        <td>Currencies</td>
+        <td>BTU26</td>
+        <td>BTV26</td>
+        <td>81815</td>
+        <td>82150</td>
+        <td class="negative">+335.0000</td>
+        <td class="negative">+4.98%</td>
+        <td><span class="badge badge-contango">Contango</span></td>
+        <td><span class="badge badge-short">SHORT</span></td>
+      </tr>
+<tr>
+        <td><strong>ZN</strong></td>
+        <td>10-Year T-Note</td>
+        <td>Financials</td>
+        <td>ZNU26</td>
+        <td>ZNZ26</td>
+        <td>106.078125</td>
+        <td>105.828125</td>
+        <td class="positive">-0.2500</td>
+        <td class="positive">-0.96%</td>
+        <td><span class="badge badge-backwardation">Backwardation</span></td>
+        <td><span class="badge badge-long">LONG</span></td>
+      </tr>
+<tr>
+        <td><strong>ZF</strong></td>
+        <td>5-Year T-Note</td>
+        <td>Financials</td>
+        <td>ZFU26</td>
+        <td>ZFZ26</td>
+        <td>104.375</td>
+        <td>104.178125</td>
+        <td class="positive">-0.1969</td>
+        <td class="positive">-0.76%</td>
+        <td><span class="badge badge-backwardation">Backwardation</span></td>
+        <td><span class="badge badge-long">LONG</span></td>
+      </tr>
+<tr>
+        <td><strong>ZT</strong></td>
+        <td>2-Year T-Note</td>
+        <td>Financials</td>
+        <td>ZTU26</td>
+        <td>ZTZ26</td>
+        <td>102.09375</td>
+        <td>101.878125</td>
+        <td class="positive">-0.2156</td>
+        <td class="positive">-0.86%</td>
+        <td><span class="badge badge-backwardation">Backwardation</span></td>
+        <td><span class="badge badge-long">LONG</span></td>
+      </tr></tbody>
+  </table>
+</div>
+
+<div class="summary-box" style="margin-top:24px;">
+  <h3>How Roll Yield Works</h3>
+  <div class="summary-item"><span><strong>Backwardation</strong> (LONG): Front > Next</span><span style="color:#3fb950">Positive roll yield — futures curve slopes down. Roll profits as contracts converge to spot.</span></div>
+  <div class="summary-item"><span><strong>Contango</strong> (SHORT): Front < Next</span><span style="color:#f85149">Negative roll yield — futures curve slopes up. Shorts benefit as contracts converge to spot.</span></div>
+  <div class="summary-item"><span><strong>Annualized Yield</strong></span><span style="color:#8b949e">The annualized percentage return from rolling futures positions, based on front-to-next spread.</span></div>
+  <div class="summary-item"><span><strong>Daily $/contract</strong></span><span style="color:#8b949e">Dollar value of the daily basis change per contract (using standard point values).</span></div>
+</div>
+</div>
+
+<script>
+$(document).ready(function() {
+  $('#longTable').DataTable({ pageLength: 50, order: [[8, 'desc']] });
+  $('#shortTable').DataTable({ pageLength: 50, order: [[8, 'desc']] });
+  $('#allTable').DataTable({ pageLength: 50, order: [[8, 'desc']] });
+
+  $('.tab').click(function() {
+    $('.tab').removeClass('active');
+    $('.tab-content').removeClass('active');
+    $(this).addClass('active');
+    $('#' + $(this).data('tab')).addClass('active');
+  });
+});
+</script>
+</body>
+</html>
