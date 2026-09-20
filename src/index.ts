@@ -40,6 +40,10 @@ export default {
       return handleRefresh(env);
     }
 
+    if (url.pathname === '/api/refresh-manual') {
+      return handleRefreshManual(request, env);
+    }
+
     if (url.pathname === '/api/data') {
       return handleGetData(env);
     }
@@ -58,191 +62,216 @@ export default {
 
 /**
  * Main function: visit barchart.com, get WAF token, fetch data
+ * If manualWafToken is provided, skip browser automation and use it directly
  */
-async function fetchAndStoreData(env: Env) {
-  console.log('Connecting to browser...');
-  const browser = await puppeteer.launch(env.MYBROWSER);
+async function fetchAndStoreData(env: Env, manualWafToken?: string) {
+  let browser = null;
+  let awsWafToken = manualWafToken || '';
 
-  try {
-    // Create a page
-    console.log('Creating page...');
-    const page = await browser.newPage();
-    
-    // Set viewport
-    await page.setViewport({ width: 1920, height: 1080 });
+  if (!awsWafToken) {
+    console.log('Connecting to browser...');
+    browser = await puppeteer.launch(env.MYBROWSER);
 
-    // Set realistic user agent
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36'
-    );
-
-    // Navigate to barchart
-    console.log('Navigating to barchart.com...');
     try {
-      await page.goto('https://www.barchart.com/futures/major-commodities', {
-        waitUntil: 'networkidle0',
-        timeout: 60000
-      });
-      console.log('  Page loaded successfully');
-    } catch (err: any) {
-      console.log('  Navigation timeout but may still have cookies:', err.message);
-    }
+      // Create a page
+      console.log('Creating page...');
+      const page = await browser.newPage();
+      
+      // Set viewport
+      await page.setViewport({ width: 1920, height: 1080 });
 
-    // Wait for any async cookie setting
-    await sleep(3000);
+      // Set realistic user agent
+      await page.setUserAgent(
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36'
+      );
 
-    // Get cookies
-    console.log('Getting cookies...');
-    const cookies = await page.cookies();
-    console.log(`Found ${cookies.length} cookies`);
-
-    let awsWafToken = '';
-    for (const cookie of cookies) {
-      if (cookie.name === 'aws-waf-token') {
-        awsWafToken = cookie.value;
-        console.log('aws-waf-token found!');
+      // Navigate to barchart
+      console.log('Navigating to barchart.com...');
+      try {
+        await page.goto('https://www.barchart.com/futures/major-commodities', {
+          waitUntil: 'networkidle0',
+          timeout: 60000
+        });
+        console.log('  Page loaded successfully');
+      } catch (err: any) {
+        console.log('  Navigation timeout but may still have cookies:', err.message);
       }
-    }
 
-    if (!awsWafToken) {
-      console.log('No aws-waf-token found, waiting longer...');
-      await sleep(5000);
-      const cookies2 = await page.cookies();
-      for (const c of cookies2) {
-        if (c.name === 'aws-waf-token') {
-          awsWafToken = c.value;
-          console.log('Found aws-waf-token on retry!');
+      // Wait for any async cookie setting
+      await sleep(3000);
+
+      // Get cookies
+      console.log('Getting cookies...');
+      const cookies = await page.cookies();
+      console.log(`Found ${cookies.length} cookies`);
+
+      for (const cookie of cookies) {
+        if (cookie.name === 'aws-waf-token') {
+          awsWafToken = cookie.value;
+          console.log('aws-waf-token found!');
         }
       }
-    }
 
-    if (!awsWafToken) {
-      throw new Error('No aws-waf-token obtained from barchart.com');
-    }
-
-    // Call the API from within the browser
-    console.log('Fetching futures data...');
-    const mainUrl = 'https://www.barchart.com/proxies/core-api/v1/quotes/get?lists=futures.category.us.all&fields=symbol%2CcontractName%2ClastPrice%2CpriceChange%2CopenPrice%2ChighPrice%2ClowPrice%2Cvolume%2CtradeTime%2Ccategory%2ChasOptions%2CsymbolCode%2CsymbolType&limit=100&page=1&groupBy=category&raw=1';
-
-    const mainData = await page.evaluate(async (url: string) => {
-      const resp = await fetch(url, {
-        headers: { 
-          'accept': 'application/json', 
-          'referer': 'https://www.barchart.com/futures/major-commodities' 
+      if (!awsWafToken) {
+        console.log('No aws-waf-token found, waiting longer...');
+        await sleep(5000);
+        const cookies2 = await page.cookies();
+        for (const c of cookies2) {
+          if (c.name === 'aws-waf-token') {
+            awsWafToken = c.value;
+            console.log('Found aws-waf-token on retry!');
+          }
         }
-      });
-      if (!resp.ok) throw new Error('API returned ' + resp.status);
-      return resp.json();
-    }, mainUrl);
+      }
+    } finally {
+      if (browser) {
+        try { await browser.close(); } catch (e) {}
+      }
+    }
+  }
 
-    console.log('API call successful!');
+  if (!awsWafToken) {
+    throw new Error('No aws-waf-token obtained from barchart.com');
+  }
 
-    // Process data
-    const instrumentsToFetch = new Set<string>();
-    const futuresData: any[] = [];
+  console.log('Using aws-waf-token for API calls...');
 
-    for (const category in mainData.data) {
-      const items = mainData.data[category];
-      for (const item of items) {
-        const raw = item.raw;
-        const rootSymbol = (raw.symbol as string).match(/^([A-Z0-9]{2})/)?.[1];
-        if (rootSymbol && TARGET_INSTRUMENTS.includes(rootSymbol)) {
-          instrumentsToFetch.add(rootSymbol);
-          futuresData.push({
+  // Call the API from within the browser (or using fetch with token)
+  console.log('Fetching futures data...');
+  const mainUrl = 'https://www.barchart.com/proxies/core-api/v1/quotes/get?lists=futures.category.us.all&fields=symbol%2CcontractName%2ClastPrice%2CpriceChange%2CopenPrice%2ChighPrice%2ClowPrice%2Cvolume%2CtradeTime%2Ccategory%2ChasOptions%2CsymbolCode%2CsymbolType&limit=100&page=1&groupBy=category&raw=1';
+
+  const mainData = await fetchWithToken(mainUrl, awsWafToken);
+
+  console.log('API call successful!');
+
+  // Process data
+  const instrumentsToFetch = new Set<string>();
+  const futuresData: any[] = [];
+
+  for (const category in mainData.data) {
+    const items = mainData.data[category];
+    for (const item of items) {
+      const raw = item.raw;
+      const rootSymbol = (raw.symbol as string).match(/^([A-Z0-9]{2})/)?.[1];
+      if (rootSymbol && TARGET_INSTRUMENTS.includes(rootSymbol)) {
+        instrumentsToFetch.add(rootSymbol);
+        futuresData.push({
+          symbol: raw.symbol,
+          contractName: raw.contractName,
+          lastPrice: raw.lastPrice,
+          priceChange: raw.priceChange,
+          openPrice: raw.openPrice,
+          highPrice: raw.highPrice,
+          lowPrice: raw.lowPrice,
+          volume: raw.volume,
+          tradeTime: raw.tradeTime,
+          category: raw.category,
+          rootSymbol
+        });
+      }
+    }
+  }
+
+  console.log(`Found ${futuresData.length} contracts across ${instrumentsToFetch.size} instruments`);
+
+  // Fetch contract details
+  const allContracts: any[] = [];
+  for (const rootSymbol of instrumentsToFetch) {
+    await sleep(500);
+    const detailUrl = `https://www.barchart.com/proxies/core-api/v1/quotes/get?fields=symbol%2CcontractSymbol%2ClastPrice%2CpriceChange%2CopenPrice%2ChighPrice%2ClowPrice%2CpreviousPrice%2Cvolume%2CopenInterest%2CtradeTime%2CsymbolCode%2CsymbolType%2ChasOptions&lists=futures.contractInRoot&root=${rootSymbol}&meta=field.shortName%2Cfield.type%2Cfield.description%2Clists.lastUpdate&hasOptions=true&page=1&limit=100&raw=1`;
+    const referer = `https://www.barchart.com/futures/quotes/${rootSymbol}*0/futures-prices`;
+
+    try {
+      const detailData = await fetchWithToken(detailUrl, awsWafToken, referer);
+
+      if (detailData && detailData.data) {
+        for (const contract of detailData.data) {
+          const raw = contract.raw;
+          allContracts.push({
+            rootSymbol,
             symbol: raw.symbol,
-            contractName: raw.contractName,
+            contractSymbol: raw.contractSymbol,
             lastPrice: raw.lastPrice,
             priceChange: raw.priceChange,
             openPrice: raw.openPrice,
             highPrice: raw.highPrice,
             lowPrice: raw.lowPrice,
+            previousPrice: raw.previousPrice,
             volume: raw.volume,
-            tradeTime: raw.tradeTime,
-            category: raw.category,
-            rootSymbol
+            openInterest: raw.openInterest,
+            tradeTime: raw.tradeTime
           });
         }
+        console.log(`  ${rootSymbol}: ${detailData.data.length} contracts`);
+      } else {
+        console.log(`  ${rootSymbol}: no data`);
       }
+    } catch (err: any) {
+      console.log(`Error ${rootSymbol}: ${err.message}`);
     }
-
-    console.log(`Found ${futuresData.length} contracts across ${instrumentsToFetch.size} instruments`);
-
-    // Fetch contract details
-    const allContracts: any[] = [];
-    for (const rootSymbol of instrumentsToFetch) {
-      await sleep(500);
-      const detailUrl = `https://www.barchart.com/proxies/core-api/v1/quotes/get?fields=symbol%2CcontractSymbol%2ClastPrice%2CpriceChange%2CopenPrice%2ChighPrice%2ClowPrice%2CpreviousPrice%2Cvolume%2CopenInterest%2CtradeTime%2CsymbolCode%2CsymbolType%2ChasOptions&lists=futures.contractInRoot&root=${rootSymbol}&meta=field.shortName%2Cfield.type%2Cfield.description%2Clists.lastUpdate&hasOptions=true&page=1&limit=100&raw=1`;
-      const referer = `https://www.barchart.com/futures/quotes/${rootSymbol}*0/futures-prices`;
-
-      try {
-        const detailData = await page.evaluate(async ({ url, referer }: { url: string; referer: string }) => {
-          const resp = await fetch(url, {
-            headers: { 'accept': 'application/json', 'referer': referer }
-          });
-          if (!resp.ok) return null;
-          return resp.json();
-        }, { url: detailUrl, referer });
-
-        if (detailData && detailData.data) {
-          for (const contract of detailData.data) {
-            const raw = contract.raw;
-            allContracts.push({
-              rootSymbol,
-              symbol: raw.symbol,
-              contractSymbol: raw.contractSymbol,
-              lastPrice: raw.lastPrice,
-              priceChange: raw.priceChange,
-              openPrice: raw.openPrice,
-              highPrice: raw.highPrice,
-              lowPrice: raw.lowPrice,
-              previousPrice: raw.previousPrice,
-              volume: raw.volume,
-              openInterest: raw.openInterest,
-              tradeTime: raw.tradeTime
-            });
-          }
-          console.log(`  ${rootSymbol}: ${detailData.data.length} contracts`);
-        } else {
-          console.log(`  ${rootSymbol}: no data`);
-        }
-      } catch (err: any) {
-        console.log(`Error ${rootSymbol}: ${err.message}`);
-      }
-    }
-
-    // Close browser
-    console.log('Closing browser...');
-    await browser.close();
-
-    // Store in KV
-    const payload = {
-      fetchedAt: new Date().toISOString(),
-      futuresData,
-      allContracts,
-      instruments: Array.from(instrumentsToFetch),
-      stats: {
-        totalContracts: futuresData.length,
-        totalInstruments: instrumentsToFetch.size,
-        totalContractDetails: allContracts.length
-      }
-    };
-
-    await env.FUTURES_DATA.put('latest', JSON.stringify(payload));
-    await env.FUTURES_DATA.put('lastUpdated', new Date().toISOString());
-
-    console.log('Data stored successfully');
-    return { success: true, stats: payload.stats };
-
-  } catch (error: any) {
-    console.error('Error:', error.message);
-    try { await browser.close(); } catch (e) {}
-    throw error;
   }
+
+  // Store in KV
+  const payload = {
+    fetchedAt: new Date().toISOString(),
+    futuresData,
+    allContracts,
+    instruments: Array.from(instrumentsToFetch),
+    stats: {
+      totalContracts: futuresData.length,
+      totalInstruments: instrumentsToFetch.size,
+      totalContractDetails: allContracts.length
+    }
+  };
+
+  await env.FUTURES_DATA.put('latest', JSON.stringify(payload));
+  await env.FUTURES_DATA.put('lastUpdated', new Date().toISOString());
+
+  console.log('Data stored successfully');
+  return { success: true, stats: payload.stats };
+}
+
+async function fetchWithToken(url: string, wafToken: string, referer?: string): Promise<any> {
+  const headers: Record<string, string> = {
+    'accept': 'application/json',
+    'cookie': `aws-waf-token=${wafToken}`
+  };
+  if (referer) {
+    headers['referer'] = referer;
+  }
+  
+  const resp = await fetch(url, { headers });
+  if (!resp.ok) throw new Error('API returned ' + resp.status);
+  return resp.json();
 }
 
 async function handleRefresh(env: Env): Promise<Response> {
   try {
     const result = await fetchAndStoreData(env);
+    return new Response(JSON.stringify(result), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (error: any) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+async function handleRefreshManual(request: Request, env: Env): Promise<Response> {
+  try {
+    const body = await request.json() as { wafToken?: string };
+    const wafToken = body.wafToken?.trim();
+    
+    if (!wafToken) {
+      return new Response(JSON.stringify({ error: 'wafToken is required in request body' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const result = await fetchAndStoreData(env, wafToken);
     return new Response(JSON.stringify(result), {
       headers: { 'Content-Type': 'application/json' }
     });
