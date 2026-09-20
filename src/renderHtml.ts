@@ -38,7 +38,13 @@ export function renderHtml() {
     </div>
 
     <div class="card">
-      <h3>Manual WAF Token (if auto fails)</h3>
+      <h3>Manual WAF Token (fallback)</h3>
+      <p style="color:#f0b34b;">
+        <strong>Note:</strong> A manually pasted token is injected into the browser and the API is
+        called in-browser. It only works when this worker's browser shares the same IP as the browser
+        that minted the token (e.g. <code>wrangler dev</code> locally). A deployed worker (cloud IP)
+        will get <code>403</code> — use the auto refresh for that.
+      </p>
       <p>
         <a href="https://www.barchart.com/futures/major-commodities" target="_blank" class="link">→ Open Barchart Futures Page</a>
         (opens in new tab)
